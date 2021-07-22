@@ -78,7 +78,7 @@ createConnection({
             res.send(token);
         }
 
-        /* curl로 로그인
+        /* curl로 로그인 //bcyto 추가하기로 
             curl \
                 -X POST http://localhost:80/auth \
                 -H "Content-Type: application/json" \
@@ -88,7 +88,8 @@ createConnection({
                 }'
         */
     });
-
+   
+    
     app.post('/request',async function(req, res, next) {
         console.log(req.body);
         const requestObj: RequestObj =  req.body;
@@ -127,12 +128,12 @@ createConnection({
                             "requester":          "김치과의원",
                             "responder":          "연세대학병원",
                             "status":             "접수대기",
-                            "patient_name":       "김환자",
-                            "patient_chartid":    "0003948984fede12",
+                            "patient_name":       "조환자",
+                            "patient_chartid":    "00039483244fede12",
                             "appointment_status": "접수완료",
                             "appointment_date":   "1995-12-17T03:24:00",
                             "questionaire":       "",
-                            "patient_phone":      "01025902746",
+                            "patient_phone":      "01021232746",
                             "request_date":       "1996-12-17T03:24:00",
                             "requester_note":     "아파보임 사랑니가 깊어서 수술 반드시 필요",
                             "responder_note":     "사랑니 수술중 블리딩이 많이 발생 염증 반응 안일어나게 조심할것",
@@ -174,7 +175,7 @@ createConnection({
     }
 
     function hasValidToken(req, res, next) {
-        
+
         const token = req.token;
 
         if( token !== "error!") {
@@ -213,7 +214,7 @@ createConnection({
              -X GET http://localhost:80/request \
                 -H "Accept: application/json" \
                 -H "Content-Type: application/json" \
-                -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MjY5MjU5NDksImRhdGEiOiIwMTAyNTkwMjc0NjpoaSIsImlhdCI6MTYyNjkyMjM0OX0.S-VIUvoq5OabryYbqXnBtZemHqjpNFVQcpRjNkXn_QA" \
+                -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MjY5MzUzOTksImRhdGEiOiIwMTAyNTkwMjc0NjpoaSIsImlhdCI6MTYyNjkzMTc5OX0.asvhDG2CksdUB-3NYvc4WULvLL6kd-QTDT1xsdRwPdk" \
                
         */
     })
