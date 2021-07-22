@@ -68,9 +68,8 @@ createConnection({
             res.send("401 error");
             
         } else {
-
             let token = jwt.sign({
-                exp: Math.floor(Date.now() / 1000) + (60 * 10),
+                exp: Math.floor(Date.now() / 1000) + (60 * 60),
                 data: `${phone}:${password}`
               }, 'secret');
     
@@ -148,48 +147,74 @@ createConnection({
     const InfoRouter = express.Router();
     
     function ensureAuthorized(req, res, next) {
-        var bearerToken;
-        var bearerHeader = req.headers["authorization"];
-        if (typeof bearerHeader !== 'undefined') {
-            var bearer = bearerHeader.split(" ");
-            bearerToken = bearer[1];
-            req.token = bearerToken;
-            next(); // 다음 콜백함수 진행
-        } else {
-            res.send(403);
-        }
-    }
-    function hasValidToken(req, res, next) {
-        const token = req.header.d;
-
         try {
-            var decoded = jwt.verify(token, 'secret');
 
-          } catch(err) {
-            // err
-            res.send(403)
-            console.error(err)
-          }
+            var bearerToken;
+            console.log(req.headers)
+            var bearerHeader = req.headers["authorization"];
+
+            if (typeof bearerHeader !== 'undefined') {
+                var bearer = bearerHeader.split(" ");
+                bearerToken = bearer[1];
+                req.token = bearerToken;
+                console.log("we get header")
+            } else {
+                res.send("You Did't send your jwt")
+                res.sendStatus(403)
+                console.error("missing token");
+            }
+
+        } catch(err) {
+            res.send("You Did't send your jwt")
+            res.sendStatus(403);
+            console.error(err);
+        }
+
         next();
+    }
+
+    function hasValidToken(req, res, next) {
+        
+        const token = req.token;
+
+        if( token !== "error!") {
+            try {
+                var decoded = jwt.verify(token, 'secret');
+                console.log("decoded toekn", decoded);
+                next();
+            } catch(err) {
+                // err
+                res.sendStatus(403);
+                console.error(err);
+            }
+        } else {
+
+            res.sendStatus(403);
+            console.error(token!);
+
+        }
+       
       }
 
     
     
-    app.get('/request', hasValidToken, ensureAuthorized,async function( req, res, next) {
+    app.get('/request', ensureAuthorized, hasValidToken, async function( req, res) {
 
         let requestRepository = connection.getRepository(Request);
         let savedRequests = await requestRepository.find();
         console.log(savedRequests);
+        res.setHeader
         res.send({
             params: savedRequests
         })
 
         /*
-            curl \
-                -X GET http://localhost:80/request \
-                -H "Authentication: Bearer "
-                -H "Content-Type: application/json"
-                -d '{ "token": }'
+            curl  \
+             -X GET http://localhost:80/request \
+                -H "Accept: application/json" \
+                -H "Content-Type: application/json" \
+                -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MjY5MjU5NDksImRhdGEiOiIwMTAyNTkwMjc0NjpoaSIsImlhdCI6MTYyNjkyMjM0OX0.S-VIUvoq5OabryYbqXnBtZemHqjpNFVQcpRjNkXn_QA" \
+               
         */
     })
 
