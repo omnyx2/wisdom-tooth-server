@@ -1,0 +1,57 @@
+Arguments: 
+  /opt/homebrew/Cellar/node/15.8.0/bin/node /opt/homebrew/Cellar/yarn/1.22.10/libexec/bin/yarn.js add exoress
+
+PATH: 
+  /Users/lyuhyeonseog/opt/anaconda3/bin:/Users/lyuhyeonseog/opt/anaconda3/condabin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin:/opt/homebrew/opt/fzf/bin
+
+Yarn version: 
+  1.22.10
+
+Node version: 
+  15.8.0
+
+Platform: 
+  darwin arm64
+
+Trace: 
+  Error: https://registry.yarnpkg.com/exoress: Not found
+      at Request.params.callback [as _callback] (/opt/homebrew/Cellar/yarn/1.22.10/libexec/lib/cli.js:66988:18)
+      at Request.self.callback (/opt/homebrew/Cellar/yarn/1.22.10/libexec/lib/cli.js:140749:22)
+      at Request.emit (node:events:378:20)
+      at Request.<anonymous> (/opt/homebrew/Cellar/yarn/1.22.10/libexec/lib/cli.js:141721:10)
+      at Request.emit (node:events:378:20)
+      at IncomingMessage.<anonymous> (/opt/homebrew/Cellar/yarn/1.22.10/libexec/lib/cli.js:141643:12)
+      at Object.onceWrapper (node:events:484:28)
+      at IncomingMessage.emit (node:events:390:22)
+      at endReadableNT (node:internal/streams/readable:1307:12)
+      at processTicksAndRejections (node:internal/process/task_queues:81:21)
+
+npm manifest: 
+  {
+     "name": "InvisionWebViewServer",
+     "version": "0.0.1",
+     "description": "Awesome project developed with TypeORM.",
+     "devDependencies": {
+        "@types/node": "^8.0.29",
+        "ts-node": "3.3.0",
+        "typescript": "3.3.3333"
+     },
+     "dependencies": {
+        "@types/express": "^4.17.13",
+        "express": "^4.17.1",
+        "jsonwebtoken": "^8.5.1",
+        "pg": "^8.4.0",
+        "reflect-metadata": "^0.1.10",
+        "typeorm": "0.2.34"
+     },
+     "scripts": {
+        "start": "ts-node src/index.ts",
+        "start:dev": "nodemon --watch src/** --ext ts,json --ignore src/**/*.spec.ts --exec ts-node src/index.ts"
+     }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

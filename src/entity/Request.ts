@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity()
-export class Patient {
+export class Request {
 
     @PrimaryGeneratedColumn()
     id: number;

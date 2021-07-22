@@ -3,7 +3,7 @@ import * as express from "express";
 import { createConnection } from "typeorm";
 import { Photo } from "./entity/Photo";
 import { Doctor } from "./entity/Doctor";
-import { Patient } from "./entity/Patient";
+import { Request } from "./entity/Request";
 
 
 
@@ -11,7 +11,8 @@ var jwt = require('jsonwebtoken');
 import secretObj from "./jwt/jwt";
 
 
-import { DoctorObj } from './interfaces'
+import { DoctorObj, RequestObj } from './interfaces'
+import { runInNewContext } from "vm";
 
 
 createConnection({
@@ -24,7 +25,7 @@ createConnection({
     entities: [
         Photo,
 	    Doctor,
-	    Patient
+	    Request
     ],
     synchronize: true,
 }).then(async connection => {
@@ -51,9 +52,33 @@ createConnection({
     });
 
     console.log(`turning on server on : ${ServerBasicConfig.port}`);
+    
     // sign in link
-    app.post('/auth', function(req, res, next) {
+    app.post('/auth', async function(req, res, next) {
         
+        
+        const { phone, password } = req.body;
+        let doctorRepository = connection.getRepository(Doctor);
+        let savedDoctorUser = await doctorRepository.findOne({phone: phone})
+        console.log(savedDoctorUser.password)
+
+        if( savedDoctorUser.password !== password ) {
+            
+            res.setHeader("Content-Type", "application/json");
+            res.send("401 error");
+            
+        } else {
+
+            let token = jwt.sign({
+                exp: Math.floor(Date.now() / 1000) + (60 * 10),
+                data: `${phone}:${password}`
+              }, 'secret');
+    
+            console.log(token);
+            res.setHeader("Content-Type", "application/json");
+            res.send(token);
+        }
+
         /* curl로 로그인
             curl \
                 -X POST http://localhost:80/auth \
@@ -63,41 +88,136 @@ createConnection({
                     "password": "hi" 
                 }'
         */
-        const { phone, password } = req.body;
-
-        let token = jwt.sign({
-            exp: Math.floor(Date.now() / 1000) + (60 * 10),
-            data: `${phone}:${password}`
-          }, 'secret');
-
-        console.log(token);
-        res.setHeader("Content-Type", "application/json");
-        res.send(token);
     });
+
+    app.post('/request',async function(req, res, next) {
+        console.log(req.body);
+        const requestObj: RequestObj =  req.body;
+        
+
+        let request = new Request();
+              
+        request.requester =          requestObj.requester;
+        request.responder =          requestObj.responder;
+        request.status =             requestObj.status;
+        request.patient_name =       requestObj.patient_name;
+        request.patient_chartid =    requestObj.patient_chartid;
+        request.appointment_status = requestObj.appointment_status;
+        request.appointment_date =   requestObj.appointment_date;
+        request.questionaire =       requestObj.questionaire;
+        request.patient_phone =      requestObj.patient_phone;
+        request.request_date =       requestObj.request_date;
+        request.requester_note =     requestObj.requester_note;
+        request.responder_note =     requestObj.responder_note;
+        request.patient_sex =        requestObj.patient_sex;
+        request.read =               requestObj.read;
+
+        console.log("patient has been saved");
+
+        let requestRepository = connection.getRepository(Request);
+        await requestRepository.save(request);
+
+        res.send("done")
+
+        /*
+            curl \
+                -X POST http://localhost:80/request \
+                -H "Content-Type: application/json" \
+                -d  '{
+                        
+                            "requester":          "김치과의원",
+                            "responder":          "연세대학병원",
+                            "status":             "접수대기",
+                            "patient_name":       "김환자",
+                            "patient_chartid":    "0003948984fede12",
+                            "appointment_status": "접수완료",
+                            "appointment_date":   "1995-12-17T03:24:00",
+                            "questionaire":       "",
+                            "patient_phone":      "01025902746",
+                            "request_date":       "1996-12-17T03:24:00",
+                            "requester_note":     "아파보임 사랑니가 깊어서 수술 반드시 필요",
+                            "responder_note":     "사랑니 수술중 블리딩이 많이 발생 염증 반응 안일어나게 조심할것",
+                            "patient_sex":        "M",
+                            "read":               "김의원"
+                        
+                    }'
+        */
+    })
+    
+    // make it need router
+    const InfoRouter = express.Router();
+    
+    function ensureAuthorized(req, res, next) {
+        var bearerToken;
+        var bearerHeader = req.headers["authorization"];
+        if (typeof bearerHeader !== 'undefined') {
+            var bearer = bearerHeader.split(" ");
+            bearerToken = bearer[1];
+            req.token = bearerToken;
+            next(); // 다음 콜백함수 진행
+        } else {
+            res.send(403);
+        }
+    }
+    function hasValidToken(req, res, next) {
+        const token = req.header.d;
+
+        try {
+            var decoded = jwt.verify(token, 'secret');
+
+          } catch(err) {
+            // err
+            res.send(403)
+            console.error(err)
+          }
+        next();
+      }
+
+    
+    
+    app.get('/request', hasValidToken, ensureAuthorized,async function( req, res, next) {
+
+        let requestRepository = connection.getRepository(Request);
+        let savedRequests = await requestRepository.find();
+        console.log(savedRequests);
+        res.send({
+            params: savedRequests
+        })
+
+        /*
+            curl \
+                -X GET http://localhost:80/request \
+                -H "Authentication: Bearer "
+                -H "Content-Type: application/json"
+                -d '{ "token": }'
+        */
+    })
+
+    app.get('/doctors/name', async function(req, res, next) {
+
+        let doctorRepository = connection.getRepository(Doctor);
+        let savedDoctors= await doctorRepository.find();
+        
+        let DoctorsName = []
+        savedDoctors.forEach(element => {
+            DoctorsName.push(element.name)
+        })
+        console.log(DoctorsName)
+
+        res.send(DoctorsName)
+        /*
+            curl \
+                -X GET http://localhost:80/doctors \
+                -H "Content-Type: application/json"
+        */
+    })
 
     // sign up link
     app.post('/auth/signup', async function(req, res, next) {
-        
-        const doctorValue: DoctorObj = req.body
 
-        /* curl로 가입
-            curl \
-                -X POST http://localhost:80/auth/signup \
-                -H "Content-Type: application/json" \
-                -d '{
-                    "name": "현석",
-                    "password": "hi",
-                    "phone": "01025902746",
-                    "belong":   "연세 대학 의료 병원",
-                    "position": "책임의사",
-                    "type" :    "??",
-                    "email" :   "omnnyx2@gmail.com", 
-                    "profile_image" :  "www.naver.com/png",
-                    "address" : "서울특별시 신촌 에스큐브 S3"
-            }'
-        */
-
+        const doctorValue: DoctorObj = req.body;
         let doctor = new Doctor();
+
         doctor.name =                doctorValue.name;
         doctor.password =            doctorValue.password;
         doctor.belong =              doctorValue.belong;
@@ -111,13 +231,31 @@ createConnection({
         console.log("Doctor has been saved");
         await connection.manager.save(doctor);
 
-        console.log(req.body)
-        res.send("Thanks")
+        console.log(req.body);
+        res.send("Thanks");
+
+        /* curl로 가입
+            curl \
+                -X POST http://localhost:80/auth/signup \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "name": "동현",
+                    "password": "hi",
+                    "phone": "01021902716",
+                    "belong":   "연세 대학 의료 병원",
+                    "position": "책임의사",
+                    "type" :    "??",
+                    "email" :   "donghuenx2@gmail.com", 
+                    "profile_image" :  "www.naver.com/png",
+                    "address" : "서울특별시 신촌 에스큐브 S3"
+            }'
+        */
     })
+
+
    
     app.delete('/clear', function(req, res, next) {
        const where:string = req.body.clearWhere
-
        if( where == "doctor") {}
     })
     

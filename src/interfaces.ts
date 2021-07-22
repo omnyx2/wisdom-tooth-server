@@ -10,3 +10,19 @@ export interface DoctorObj  {
     address: string
 }
 
+export interface RequestObj{
+    requester: string,
+    responder: string,
+    status: string,
+    patient_name: string,
+    patient_chartid: string,
+    appointment_status: string,
+    appointment_date: string,
+    questionaire: string,
+    patient_phone: string,
+    request_date: string,
+    requester_note: string,
+    responder_note: string,
+    patient_sex: string,
+    read: string,
+}
