@@ -5,11 +5,9 @@ import { Photo } from "./entity/Photo";
 import { Doctor } from "./entity/Doctor";
 import { Request } from "./entity/Request";
 
-
-
 var jwt = require('jsonwebtoken');
-import secretObj from "./jwt/jwt";
-
+var bcrypt = require('bcrypt');
+import {  asyncBcryptPassword, ensureAuthorized, hasValidToken,} from './lib/authLib'
 
 import { DoctorObj, RequestObj } from './interfaces'
 import { runInNewContext } from "vm";
@@ -31,10 +29,7 @@ createConnection({
 }).then(async connection => {
     
     const ServerBasicConfig = {
-        port: 80,
-    }
-    const sign = () => {
-      let token
+        port: 80
     }
     // create and setup express app
     const app = express();
@@ -54,46 +49,67 @@ createConnection({
     console.log(`turning on server on : ${ServerBasicConfig.port}`);
     
     // sign in link
-    app.post('/auth', async function(req, res, next) {
-        
-        
+    app.post('/auth', asyncBcryptPassword, async function(req, res, next) {
+       
+        // 요청으로 부터 데이터 얻기
         const { phone, password } = req.body;
-        let doctorRepository = connection.getRepository(Doctor);
-        let savedDoctorUser = await doctorRepository.findOne({phone: phone})
-        console.log(savedDoctorUser.password)
+        
+        // 데이터 베이스에서 데이터 가져오기 
+        const doctorRepository = connection.getRepository(Doctor)
+        const savedDoctorUser = await doctorRepository.findOne({phone: phone})
+         
+        // 요청 데이터의 유효성 검사, 유저 존재 확인
+        try {
+            if( savedDoctorUser === undefined) {
+                res.setHeader("Content-Type", "application/json");
+                res.send("wrong phone number");   
 
-        if( savedDoctorUser.password !== password ) {
-            
-            res.setHeader("Content-Type", "application/json");
-            res.send("401 error");
-            
-        } else {
-            let token = jwt.sign({
-                exp: Math.floor(Date.now() / 1000) + (60 * 60),
-                data: `${phone}:${password}`
-              }, 'secret');
-    
-            console.log(token);
-            res.setHeader("Content-Type", "application/json");
-            res.send(token);
+            } else {
+                
+                // 요청 데이터의 유효성 검사, 비밀번호 검증 확인
+                const hashedPassword = savedDoctorUser.password
+                bcrypt.compare(password, hashedPassword).then( async function(result) {
+                    console.log("pass", password, hashedPassword)
+                    console.log(result)
+
+                    // token 생성, 분리할 것
+                    if( result ) {
+
+                        let token = jwt.sign({
+                            exp: Math.floor(Date.now() / 1000) + (60 * 60),
+                            data: `${phone}:${hashedPassword}`
+                        }, 'secret');
+
+                        //token 생성시 데이터 베이스에 저장
+                        savedDoctorUser.token = token;
+                        await doctorRepository.save(savedDoctorUser);
+                        
+                        // 토큰 응답 데이터에 담아 전달
+                        res.setHeader("Content-Type", "application/json");
+                        res.send(token);
+
+                    }
+                });
+            }
+        } catch (err){
+            console.log(err)
         }
 
-        /* curl로 로그인 //bcyto 추가하기로 
+        /* 
             curl \
                 -X POST http://localhost:80/auth \
                 -H "Content-Type: application/json" \
                 -d '{
-                    "phone": "01025902746",
+                    "phone": "01073343551",
                     "password": "hi" 
                 }'
         */
     });
    
-    
-    app.post('/request',async function(req, res, next) {
+    // 판비 서버로 부터 데이터 전송하기 실행
+    app.post('/request', async function(req, res, next) {
         console.log(req.body);
         const requestObj: RequestObj =  req.body;
-        
 
         let request = new Request();
               
@@ -123,6 +139,7 @@ createConnection({
             curl \
                 -X POST http://localhost:80/request \
                 -H "Content-Type: application/json" \
+                -H ""
                 -d  '{
                         
                             "requester":          "김치과의원",
@@ -145,60 +162,10 @@ createConnection({
     })
     
     // make it need router
+
     const InfoRouter = express.Router();
-    
-    function ensureAuthorized(req, res, next) {
-        try {
 
-            var bearerToken;
-            console.log(req.headers)
-            var bearerHeader = req.headers["authorization"];
-
-            if (typeof bearerHeader !== 'undefined') {
-                var bearer = bearerHeader.split(" ");
-                bearerToken = bearer[1];
-                req.token = bearerToken;
-                console.log("we get header")
-            } else {
-                res.send("You Did't send your jwt")
-                res.sendStatus(403)
-                console.error("missing token");
-            }
-
-        } catch(err) {
-            res.send("You Did't send your jwt")
-            res.sendStatus(403);
-            console.error(err);
-        }
-
-        next();
-    }
-
-    function hasValidToken(req, res, next) {
-
-        const token = req.token;
-
-        if( token !== "error!") {
-            try {
-                var decoded = jwt.verify(token, 'secret');
-                console.log("decoded toekn", decoded);
-                next();
-            } catch(err) {
-                // err
-                res.sendStatus(403);
-                console.error(err);
-            }
-        } else {
-
-            res.sendStatus(403);
-            console.error(token!);
-
-        }
-       
-      }
-
-    
-    
+    // 웹앱에서 환자 데이터 요청하기
     app.get('/request', ensureAuthorized, hasValidToken, async function( req, res) {
 
         let requestRepository = connection.getRepository(Request);
@@ -214,7 +181,7 @@ createConnection({
              -X GET http://localhost:80/request \
                 -H "Accept: application/json" \
                 -H "Content-Type: application/json" \
-                -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MjY5MzUzOTksImRhdGEiOiIwMTAyNTkwMjc0NjpoaSIsImlhdCI6MTYyNjkzMTc5OX0.asvhDG2CksdUB-3NYvc4WULvLL6kd-QTDT1xsdRwPdk" \
+                -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2Mjc0Njc1OTcsImRhdGEiOiIwMTA3MzM0MzU1MTokMmIkMDQkMGJISUdJdFY0OVN0UG1YT3NyRTBGLmxNTXpTOS9sd0gySEtTanFQOEN0akZQS1paLkhlZGUiLCJpYXQiOjE2Mjc0NjM5OTd9.R3pMVV2igeK4OqwPcVFROLyZ7pAXzvtzmFCiWGKUiJM" \
                
         */
     })
@@ -239,12 +206,13 @@ createConnection({
     })
 
     // sign up link
-    app.post('/auth/signup', async function(req, res, next) {
+    app.post('/auth/signup', asyncBcryptPassword, async function(req, res, next) {
 
         const doctorValue: DoctorObj = req.body;
         let doctor = new Doctor();
 
         doctor.name =                doctorValue.name;
+        // d암호화된 패스워드
         doctor.password =            doctorValue.password;
         doctor.belong =              doctorValue.belong;
         doctor.phone =               doctorValue.phone; // pk
@@ -267,11 +235,25 @@ createConnection({
                 -d '{
                     "name": "동현",
                     "password": "hi",
-                    "phone": "01021902716",
+                    "phone": "01073343551",
                     "belong":   "연세 대학 의료 병원",
                     "position": "책임의사",
                     "type" :    "??",
                     "email" :   "donghuenx2@gmail.com", 
+                    "profile_image" :  "www.naver.com/png",
+                    "address" : "서울특별시 신촌 에스큐브 S3"
+            }'
+            curl \
+                -X POST http://localhost:80/auth/signup \
+                -H "Content-Type: application/json" \
+                -d '{
+                    "name": "현석",
+                    "password": "hi",
+                    "phone": "0102590476",
+                    "belong":   "연세 대학 의료 병원",
+                    "position": "책임의사",
+                    "type" :    "??",
+                    "email" :   "omnyx2@gmail.com", 
                     "profile_image" :  "www.naver.com/png",
                     "address" : "서울특별시 신촌 에스큐브 S3"
             }'

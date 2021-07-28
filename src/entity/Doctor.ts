@@ -15,8 +15,11 @@ export class Doctor {
     @PrimaryColumn({length: 45 })
     phone: string;
     
-    @Column({ length: 45 })
+    @Column({ length: 200 })
     password: string;
+
+    @Column({ length: 100 })
+    token: string;
     
     @Column({ length: 45 })
     belong: string;
