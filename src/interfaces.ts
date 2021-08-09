@@ -20,9 +20,11 @@ export interface RequestObj{
     appointment_date: string,
     questionaire: string,
     patient_phone: string,
-    request_date: string,
+    patient_ssn: string,
+    request_date: number,
     requester_note: string,
     responder_note: string,
     patient_sex: string,
-    read: string,
+    operator: string,
+    img_url: string,
 }

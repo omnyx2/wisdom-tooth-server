@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import * as express from "express";
+import * as request from 'request';
 import { createConnection } from "typeorm";
 import { Photo } from "./entity/Photo";
 import { Doctor } from "./entity/Doctor";
@@ -21,7 +22,7 @@ createConnection({
     password: "",
     database: "testDB",
     entities: [
-        Photo,
+        // Photo,
 	    Doctor,
 	    Request
     ],
@@ -49,11 +50,10 @@ createConnection({
     console.log(`turning on server on : ${ServerBasicConfig.port}`);
     
     // sign in link
-    app.post('/auth', asyncBcryptPassword, async function(req, res, next) {
-       
+    app.post('/auth', async function(req, res, next) {
         // 요청으로 부터 데이터 얻기
         const { phone, password } = req.body;
-        
+    
         // 데이터 베이스에서 데이터 가져오기 
         const doctorRepository = connection.getRepository(Doctor)
         const savedDoctorUser = await doctorRepository.findOne({phone: phone})
@@ -63,33 +63,33 @@ createConnection({
             if( savedDoctorUser === undefined) {
                 res.setHeader("Content-Type", "application/json");
                 res.send("wrong phone number");   
-
             } else {
                 
                 // 요청 데이터의 유효성 검사, 비밀번호 검증 확인
                 const hashedPassword = savedDoctorUser.password
-                bcrypt.compare(password, hashedPassword).then( async function(result) {
-                    console.log("pass", password, hashedPassword)
-                    console.log(result)
+                const result = await bcrypt.compare(password, hashedPassword)
+                
+                console.log("pass", password, hashedPassword)
+                console.log(result)
 
-                    // token 생성, 분리할 것
-                    if( result ) {
+                // token 생성, 분리할 것
+                if( result ) {
+                    let token = jwt.sign({
+                        exp: Math.floor(Date.now() / 1000) + (60 * 60),
+                        data: `${phone}:${hashedPassword}`
+                    }, 'secret');
 
-                        let token = jwt.sign({
-                            exp: Math.floor(Date.now() / 1000) + (60 * 60),
-                            data: `${phone}:${hashedPassword}`
-                        }, 'secret');
+                    //token 생성시 데이터 베이스에 저장
+                    savedDoctorUser.token = token;
+                    await doctorRepository.save(savedDoctorUser);
+                    
+                    // 토큰 응답 데이터에 담아 전달
+                    res.setHeader("Content-Type", "application/json");
+                    console.log(token);
+                    res.send(token);
 
-                        //token 생성시 데이터 베이스에 저장
-                        savedDoctorUser.token = token;
-                        await doctorRepository.save(savedDoctorUser);
-                        
-                        // 토큰 응답 데이터에 담아 전달
-                        res.setHeader("Content-Type", "application/json");
-                        res.send(token);
-
-                    }
-                });
+                }
+            
             }
         } catch (err){
             console.log(err)
@@ -110,23 +110,26 @@ createConnection({
     app.post('/request', async function(req, res, next) {
         console.log(req.body);
         const requestObj: RequestObj =  req.body;
+        const timestamp =  new Date().getTime();
 
         let request = new Request();
               
         request.requester =          requestObj.requester;
         request.responder =          requestObj.responder;
-        request.status =             requestObj.status;
+        request.status =             "접수대기";
         request.patient_name =       requestObj.patient_name;
         request.patient_chartid =    requestObj.patient_chartid;
-        request.appointment_status = requestObj.appointment_status;
-        request.appointment_date =   requestObj.appointment_date;
+        request.appointment_status = "접수대기";
+        request.appointment_date =   requestObj.appointment_date; // nullable
         request.questionaire =       requestObj.questionaire;
         request.patient_phone =      requestObj.patient_phone;
-        request.request_date =       requestObj.request_date;
-        request.requester_note =     requestObj.requester_note;
-        request.responder_note =     requestObj.responder_note;
-        request.patient_sex =        requestObj.patient_sex;
-        request.read =               requestObj.read;
+        request.patient_ssn =        requestObj.patient_ssn;
+        request.request_date =       timestamp; //timestamp  
+        request.requester_note =     requestObj.requester_note; // nullable
+        request.responder_note =     requestObj.responder_note; // nullable
+        request.patient_sex =        requestObj.patient_sex; 
+        request.operator =           requestObj.operator; // 초기값
+        request.img_url =            requestObj.img_url;
 
         console.log("patient has been saved");
 
@@ -151,13 +154,18 @@ createConnection({
                             "appointment_date":   "1995-12-17T03:24:00",
                             "questionaire":       "",
                             "patient_phone":      "01021232746",
-                            "request_date":       "1996-12-17T03:24:00",
                             "requester_note":     "아파보임 사랑니가 깊어서 수술 반드시 필요",
                             "responder_note":     "사랑니 수술중 블리딩이 많이 발생 염증 반응 안일어나게 조심할것",
                             "patient_sex":        "M",
-                            "read":               "김의원"
+                            "operator":               "김의원"
                         
                     }'
+
+            curl \
+              -X POST https://invisionlab.kr/login \
+              -d '{
+                {'id':'ai', 'password':'aiqub'}
+              }'
         */
     })
     
@@ -170,7 +178,20 @@ createConnection({
 
         let requestRepository = connection.getRepository(Request);
         let savedRequests = await requestRepository.find();
+        
+        // 판비 서버에서 세션을 받아서 이미지링크와 세션 전송
+        const panviServerAuthData = { id:"API" , password: "invision!@#"}
+        
+        const sessionOfPanvi = await request.post({
+            header: {},
+            url: 'https://invisionlab.kr/login', // localhost
+            body: panviServerAuthData,
+            json: true, function(error, res, body) {
+                console.log(res)
+            }
+        })
         console.log(savedRequests);
+
         res.setHeader
         res.send({
             params: savedRequests
@@ -181,8 +202,7 @@ createConnection({
              -X GET http://localhost:80/request \
                 -H "Accept: application/json" \
                 -H "Content-Type: application/json" \
-                -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2Mjc0Njc1OTcsImRhdGEiOiIwMTA3MzM0MzU1MTokMmIkMDQkMGJISUdJdFY0OVN0UG1YT3NyRTBGLmxNTXpTOS9sd0gySEtTanFQOEN0akZQS1paLkhlZGUiLCJpYXQiOjE2Mjc0NjM5OTd9.R3pMVV2igeK4OqwPcVFROLyZ7pAXzvtzmFCiWGKUiJM" \
-               
+                -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2Mjg0OTM2OTQsImRhdGEiOiIwMTA3MzM0MzU1MTokMmIkMDQkTm1YRzd2SXJOdmxVQi5JWmQublRhLjdsd0NqUkxTeTJYSHFuVVpFUER2NFR3VmxRdS9ZQ20iLCJpYXQiOjE2Mjg0OTAwOTR9.YorC8-E4-ky57TJ59YMtB-wQ-GCwJ8ieEOXb7KpX8p4
         */
     })
 
@@ -206,14 +226,18 @@ createConnection({
     })
 
     // sign up link
-    app.post('/auth/signup', asyncBcryptPassword, async function(req, res, next) {
 
+    
+    app.post('/auth/signup', asyncBcryptPassword, async function(req, res, next) {
+        asyncBcryptPassword
         const doctorValue: DoctorObj = req.body;
         let doctor = new Doctor();
 
+        console.log(req.body)
+
         doctor.name =                doctorValue.name;
         // d암호화된 패스워드
-        doctor.password =            doctorValue.password;
+        doctor.password =            req.body.password;
         doctor.belong =              doctorValue.belong;
         doctor.phone =               doctorValue.phone; // pk
         doctor.position =            doctorValue.position;
@@ -222,11 +246,19 @@ createConnection({
         doctor.profile_image =       doctorValue.profile_image;
         doctor.address =             doctorValue.address;
 
-        console.log("Doctor has been saved");
-        await connection.manager.save(doctor);
+        let doctorRepository = connection.getRepository(Doctor);
+        let isExist= await doctorRepository.findOne({phone: doctorValue.phone});
+      
+        if( isExist === undefined ) {
+            console.log("Doctor has been saved");
+            await connection.manager.save(doctor);
 
-        console.log(req.body);
-        res.send("Thanks");
+            console.log(req.body);
+            res.send("Thanks");
+        } else {
+            console.log(" Exist ")
+            res.send("404");
+        }
 
         /* curl로 가입
             curl \
@@ -249,7 +281,7 @@ createConnection({
                 -d '{
                     "name": "현석",
                     "password": "hi",
-                    "phone": "0102590476",
+                    "phone": "01025902746",
                     "belong":   "연세 대학 의료 병원",
                     "position": "책임의사",
                     "type" :    "??",
@@ -260,63 +292,11 @@ createConnection({
         */
     })
 
-
-   
     app.delete('/clear', function(req, res, next) {
        const where:string = req.body.clearWhere
        if( where == "doctor") {}
     })
-    
 
     app.listen(ServerBasicConfig.port);
-
-    // let photoRepository = connection.getRepository(Photo);
-    // console.log("Photo has been cleared");
-    // let resetPhotho = await photoRepository.find();
-    // await photoRepository.save(resetPhotho);
-    
-    // let photo = new Photo();
-
-    // photo.name =                 "hi"
-    // photo.description =          "I am near polar bears";
-    // photo.filename =             "warning.png";
-    // photo.views =                1;
-    // photo.isPublished =          true;
-
-    // console.log("Photo has been saved");
-    // await connection.manager.save(photo);
-
-    // let doctor = new Doctor();
-
-    // doctor.name =                "김동현";
-    // doctor.password =            "1234";
-    // doctor.belong =              '연세 대학 의료 병원';
-    // doctor.position =            "책임의사";
-    // doctor.type =                "??";
-    // doctor.email =               "omnnyx2@gmail.com"; // pk
-    // doctor.profile_image =       "www.naver.com/png";
-    // doctor.address =             "서울특별시 신촌 에스큐브 S3"
-    // console.log("Doctor has been saved");
-    // await connection.manager.save(doctor);
-
-    // let patient = new Patient();
-    
-    // patient.requester =          '김치과의원';
-    // patient.responder =          '연세대학병원';
-    // patient. status =            '접수대기';
-    // patient.patient_name =       '김환자';
-    // patient.patient_chartid =    "0003948984fede12";
-    // patient.appointment_status = "접수완료";
-    // patient.appointment_date =   "1995-12-17T03:24:00";
-    // patient.questionaire =       "";
-    // patient.patient_phone =      "01025902746";
-    // patient.request_date =       "1996-12-17T03:24:00";
-    // patient.requester_note =     "아파보임 사랑니가 깊어서 수술 반드시 필요";
-    // patient.responder_note =     "사랑니 수술중 블리딩이 많이 발생 염증 반응 안일어나게 조심할것";
-    // patient.patient_sex =        "M";
-    // patient.read =                "김의원";
-
-    // console.log("patient has been saved");
-    // await connection.manager.save(patient);
 
 }).catch(error => console.log(error));

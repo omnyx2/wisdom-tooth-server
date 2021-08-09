@@ -18,7 +18,7 @@ export class Doctor {
     @Column({ length: 200 })
     password: string;
 
-    @Column({ length: 100 })
+    @Column({ length: 300, nullable: true })
     token: string;
     
     @Column({ length: 45 })

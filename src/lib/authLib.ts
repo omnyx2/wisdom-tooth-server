@@ -4,26 +4,21 @@ var jwt = require('jsonwebtoken');
 // 패스워드 암호화를 위한 라이브러리, 회원가입, 로그인시 사용
 const saltRounds = 2
 
+
 export async function asyncBcryptPassword(req, res, next ) {
     
     // 요청 메세지의 데이터(비밀번호) 암호화
     try{
-        await bcrypt.hash(req.body.password, saltRounds, function (err, hash) { 
-            // 암호화된 데이터를 다시 메세지에 저장  
-            req.body.password = hash
-        })
-
+        const hash = await bcrypt.hash(req.body.password, saltRounds)
+        req.body.password = hash;
         next()
 
     } catch(err) {
         console.log(err)
         res.sendStatus(404)
     }
-
-    
     
 }
-
 
 export function ensureAuthorized(req, res, next) {
 
