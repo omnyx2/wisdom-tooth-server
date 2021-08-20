@@ -132,7 +132,7 @@ createConnection({
         request.img_url =            requestObj.img_url;
 
         console.log("patient has been saved");
-
+        
         let requestRepository = connection.getRepository(Request);
         await requestRepository.save(request);
 
@@ -191,11 +191,17 @@ createConnection({
             }
         })
         console.log(savedRequests);
+        try {
+            res.setHeader
+            res.send({
+                params: savedRequests
+            })
 
-        res.setHeader
-        res.send({
-            params: savedRequests
-        })
+        } catch(err) {
+          console.log("network err")
+          console.log(err)
+        }
+        
 
         /*
             curl  \
