@@ -195,7 +195,7 @@ createConnection({
             res.setHeader
             res.send({
                 params: savedRequests
-            })
+            });
 
         } catch(err) {
           console.log("network err")
