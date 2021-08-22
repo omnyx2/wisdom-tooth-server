@@ -11,8 +11,6 @@ var bcrypt = require('bcrypt');
 import {  asyncBcryptPassword, ensureAuthorized, hasValidToken,} from './lib/authLib'
 
 import { DoctorObj, RequestObj } from './interfaces'
-import { runInNewContext } from "vm";
-import { endianness } from "os";
 
 
 createConnection({
@@ -145,7 +143,7 @@ createConnection({
         
         const sessionOfPanvi = await request.post({
             header: {},
-            url: 'https://invisionlab.kr/login', // localhost
+            url: 'http://invisionlab.kr/login', // localhost
             body: panviServerAuthData,
             json: true, function(error, res, body) {
                 console.log(res)
@@ -170,53 +168,59 @@ createConnection({
         let requestRepository = connection.getRepository(Request);
         let savedRequest = await requestRepository.findOne({ id: req.body.id });
         const statusList = ['접수대기', '예약대기', '수술대기', '수술완료' ];
-
-        if(savedRequest.status === statusList[0]) {
-            for(let i = 0; i < statusList.length; i++) {
-                if(savedRequest.status === statusList[i]) {
-                    savedRequest.status = statusList[i+1]
-                    break;
+       
+        try {
+            if(savedRequest.status === statusList[0]) {
+                for(let i = 0; i < statusList.length; i++) {
+                    if(savedRequest.status === statusList[i]) {
+                        savedRequest.status = statusList[i+1]
+                        break;
+                    }
                 }
-            }
-            await requestRepository.save(savedRequest);
-            res.send(savedRequest);
-            res.end()
-            
-        } else if(savedRequest.status === statusList[1]) {
+                await requestRepository.save(savedRequest);
+                res.send(savedRequest);
+                res.end()
 
-            for(let i = 0; i < statusList.length; i++) {
-                if(savedRequest.status === statusList[i]) {
-                    savedRequest.status = statusList[i+1]
-                    break;
+            } else if(savedRequest.status === statusList[1]) {
+                if( savedRequest.appointment_date === undefined ) { throw "missing data"; } 
+                if( savedRequest.operator === undefined ) { throw "missing data"; } 
+                for(let i = 0; i < statusList.length; i++) {
+                    if(savedRequest.status === statusList[i]) {
+                        savedRequest.status = statusList[i+1]
+                        break;
+                    }
                 }
-            }
-            savedRequest.appointment_date = req.body.appointment_date;
-            savedRequest.operator = req.body.operator
-            savedRequest.appointment_status = "수술예약완료";
-            await requestRepository.save(savedRequest);
-            res.send(savedRequest);
-            res.end()
+                savedRequest.appointment_date = req.body.appointment_date;
+                savedRequest.operator = req.body.operator
+                savedRequest.appointment_status = "수술예약완료";
+                await requestRepository.save(savedRequest);
+                res.send(savedRequest);
+                res.end()
 
-        } else if (savedRequest.status === statusList[3])  {
-            for(let i = 0; i < statusList.length; i++) {
-                if(savedRequest.status === statusList[i]) {
-                    savedRequest.status = statusList[i+1]
-                    break;
+            } else if (savedRequest.status === statusList[3])  {
+                for(let i = 0; i < statusList.length; i++) {
+                    if(savedRequest.status === statusList[i]) {
+                        savedRequest.status = statusList[i+1]
+                        break;
+                    }
                 }
+                savedRequest.responder_note = req.body.responder_note === undefined ? "없음" : req.body.responder_note;
+                savedRequest.appointment_status = "수술예약완료";
+                await requestRepository.save(savedRequest);
+                res.send(savedRequest);
+                res.end()
+    
+            } else {
+                res.send("where are you came from? I'll send you to a virues for ukkkkkkkkkk ;)")
+                res.end()
             }
-            savedRequest.responder_note = req.body.responder_note === undefined ? "없음" : req.body.responder_note;
-            savedRequest.appointment_status = "수술예약완료";
-            
-            await requestRepository.save(savedRequest);
-            res.send(savedRequest);
-            res.end()
+    
+          res.end()
 
-        } else {
-            res.send("where are you came from? I'll send you to a virues for ukkkkkkkkkk ;)")
-            res.end()
+        } catch(err) {
+            console.log(err)
         }
-
-      res.end()
+        
     })
     app.post('/patient/calendar', ensureAuthorized, hasValidToken, async function( req, res) {
       
