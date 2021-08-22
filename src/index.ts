@@ -12,6 +12,7 @@ import {  asyncBcryptPassword, ensureAuthorized, hasValidToken,} from './lib/aut
 
 import { DoctorObj, RequestObj } from './interfaces'
 import { runInNewContext } from "vm";
+import { endianness } from "os";
 
 
 createConnection({
@@ -94,16 +95,6 @@ createConnection({
         } catch (err){
             console.log(err)
         }
-
-        /* 
-            curl \
-                -X POST http://localhost:80/auth \
-                -H "Content-Type: application/json" \
-                -d '{
-                    "phone": "01073343551",
-                    "password": "hi" 
-                }'
-        */
     });
    
     // 판비 서버로 부터 데이터 전송하기 실행
@@ -137,36 +128,6 @@ createConnection({
         await requestRepository.save(request);
 
         res.send("done")
-
-        /*
-            curl \
-                -X POST http://localhost:80/request \
-                -H "Content-Type: application/json" \
-                -H ""
-                -d  '{
-                        
-                            "requester":          "김치과의원",
-                            "responder":          "연세대학병원",
-                            "status":             "접수대기",
-                            "patient_name":       "조환자",
-                            "patient_chartid":    "00039483244fede12",
-                            "appointment_status": "접수완료",
-                            "appointment_date":   "1995-12-17T03:24:00",
-                            "questionaire":       "",
-                            "patient_phone":      "01021232746",
-                            "requester_note":     "아파보임 사랑니가 깊어서 수술 반드시 필요",
-                            "responder_note":     "사랑니 수술중 블리딩이 많이 발생 염증 반응 안일어나게 조심할것",
-                            "patient_sex":        "M",
-                            "operator":               "김의원"
-                        
-                    }'
-
-            curl \
-              -X POST https://invisionlab.kr/login \
-              -d '{
-                {'id':'ai', 'password':'aiqub'}
-              }'
-        */
     })
     
     // make it need router
@@ -189,27 +150,79 @@ createConnection({
             json: true, function(error, res, body) {
                 console.log(res)
             }
-        })
+        }) 
         console.log(savedRequests);
         try {
             res.setHeader
             res.send({
                 params: savedRequests
             });
+            res.end();
 
         } catch(err) {
           console.log("network err")
           console.log(err)
         }
-        
+    })
 
-        /*
-            curl  \
-             -X GET http://localhost:80/request \
-                -H "Accept: application/json" \
-                -H "Content-Type: application/json" \
-                -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2Mjg0OTM2OTQsImRhdGEiOiIwMTA3MzM0MzU1MTokMmIkMDQkTm1YRzd2SXJOdmxVQi5JWmQublRhLjdsd0NqUkxTeTJYSHFuVVpFUER2NFR3VmxRdS9ZQ20iLCJpYXQiOjE2Mjg0OTAwOTR9.YorC8-E4-ky57TJ59YMtB-wQ-GCwJ8ieEOXb7KpX8p4
-        */
+    app.post('/patient/status',  async function( req, res) {
+
+        let requestRepository = connection.getRepository(Request);
+        let savedRequest = await requestRepository.findOne({ id: req.body.id });
+        const statusList = ['접수대기', '예약대기', '수술대기', '수술완료' ];
+
+        if(savedRequest.status === statusList[0]) {
+            for(let i = 0; i < statusList.length; i++) {
+                if(savedRequest.status === statusList[i]) {
+                    savedRequest.status = statusList[i+1]
+                    break;
+                }
+            }
+            await requestRepository.save(savedRequest);
+            res.send(savedRequest);
+            res.end()
+            
+        } else if(savedRequest.status === statusList[1]) {
+
+            for(let i = 0; i < statusList.length; i++) {
+                if(savedRequest.status === statusList[i]) {
+                    savedRequest.status = statusList[i+1]
+                    break;
+                }
+            }
+            savedRequest.appointment_date = req.body.appointment_date;
+            savedRequest.operator = req.body.operator
+            savedRequest.appointment_status = "수술예약완료";
+            await requestRepository.save(savedRequest);
+            res.send(savedRequest);
+            res.end()
+
+        } else if (savedRequest.status === statusList[3])  {
+            for(let i = 0; i < statusList.length; i++) {
+                if(savedRequest.status === statusList[i]) {
+                    savedRequest.status = statusList[i+1]
+                    break;
+                }
+            }
+            savedRequest.responder_note = req.body.responder_note === undefined ? "없음" : req.body.responder_note;
+            savedRequest.appointment_status = "수술예약완료";
+            
+            await requestRepository.save(savedRequest);
+            res.send(savedRequest);
+            res.end()
+
+        } else {
+            res.send("where are you came from? I'll send you to a virues for ukkkkkkkkkk ;)")
+            res.end()
+        }
+
+      res.end()
+    })
+    app.post('/patient/calendar', ensureAuthorized, hasValidToken, async function( req, res) {
+      
+    })
+    app.post('/patient/status', ensureAuthorized, hasValidToken, async function( req, res) {
+      
     })
 
     app.get('/doctors/name', async function(req, res, next) {
@@ -267,34 +280,7 @@ createConnection({
         }
 
         /* curl로 가입
-            curl \
-                -X POST http://localhost:80/auth/signup \
-                -H "Content-Type: application/json" \
-                -d '{
-                    "name": "동현",
-                    "password": "hi",
-                    "phone": "01073343551",
-                    "belong":   "연세 대학 의료 병원",
-                    "position": "책임의사",
-                    "type" :    "??",
-                    "email" :   "donghuenx2@gmail.com", 
-                    "profile_image" :  "www.naver.com/png",
-                    "address" : "서울특별시 신촌 에스큐브 S3"
-            }'
-            curl \
-                -X POST http://localhost:80/auth/signup \
-                -H "Content-Type: application/json" \
-                -d '{
-                    "name": "현석",
-                    "password": "hi",
-                    "phone": "01025902746",
-                    "belong":   "연세 대학 의료 병원",
-                    "position": "책임의사",
-                    "type" :    "??",
-                    "email" :   "omnyx2@gmail.com", 
-                    "profile_image" :  "www.naver.com/png",
-                    "address" : "서울특별시 신촌 에스큐브 S3"
-            }'
+            
         */
     })
 
