@@ -149,7 +149,6 @@ createConnection({
                 console.log(res)
             }
         }) 
-        console.log(savedRequests);
         try {
             res.setHeader
             res.send({
@@ -163,12 +162,13 @@ createConnection({
         }
     })
 
-    app.post('/patient/status',  async function( req, res) {
+    app.post('/patient/status',  async function( req, res ) {
 
         let requestRepository = connection.getRepository(Request);
+        console.log(req.body)
         let savedRequest = await requestRepository.findOne({ id: req.body.id });
         const statusList = ['접수대기', '예약대기', '수술대기', '수술완료' ];
-       
+        
         try {
             if(savedRequest.status === statusList[0]) {
                 for(let i = 0; i < statusList.length; i++) {
@@ -178,12 +178,13 @@ createConnection({
                     }
                 }
                 await requestRepository.save(savedRequest);
-                res.send(savedRequest);
-                res.end()
+                let savedRequests = await requestRepository.find();
+                res.send(savedRequests);
+                res.end();
 
             } else if(savedRequest.status === statusList[1]) {
-                if( savedRequest.appointment_date === undefined ) { throw "missing data"; } 
-                if( savedRequest.operator === undefined ) { throw "missing data"; } 
+                if( savedRequest.appointment_date === undefined ) { res.send('failed'); } 
+                if( savedRequest.operator === undefined ) { res.send('failed'); } 
                 for(let i = 0; i < statusList.length; i++) {
                     if(savedRequest.status === statusList[i]) {
                         savedRequest.status = statusList[i+1]
@@ -194,10 +195,11 @@ createConnection({
                 savedRequest.operator = req.body.operator
                 savedRequest.appointment_status = "수술예약완료";
                 await requestRepository.save(savedRequest);
-                res.send(savedRequest);
-                res.end()
+                let savedRequests = await requestRepository.find();
+                res.send(savedRequests);
+                res.end();
 
-            } else if (savedRequest.status === statusList[3])  {
+            } else if (savedRequest.status === statusList[2])  {
                 for(let i = 0; i < statusList.length; i++) {
                     if(savedRequest.status === statusList[i]) {
                         savedRequest.status = statusList[i+1]
@@ -207,12 +209,13 @@ createConnection({
                 savedRequest.responder_note = req.body.responder_note === undefined ? "없음" : req.body.responder_note;
                 savedRequest.appointment_status = "수술예약완료";
                 await requestRepository.save(savedRequest);
-                res.send(savedRequest);
-                res.end()
+                let savedRequests = await requestRepository.find();
+                res.send(savedRequests);
+                res.end();
     
             } else {
-                res.send("where are you came from? I'll send you to a virues for ukkkkkkkkkk ;)")
-                res.end()
+                res.send("where are you came from? I'll send you to a virues for ukkkkkkkkkk ;)");
+                res.end();
             }
     
           res.end()
@@ -238,8 +241,7 @@ createConnection({
         savedDoctors.forEach(element => {
             DoctorsName.push(element.name)
         })
-        console.log(DoctorsName)
-
+        
         res.send(DoctorsName)
         /*
             curl \
