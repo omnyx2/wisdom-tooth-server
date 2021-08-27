@@ -4,7 +4,7 @@
    "description": "Awesome project developed with TypeORM.",
    "devDependencies": {
       "@types/node": "^8.0.29",
-      "ts-node": "3.3.0",
+      "ts-node": "^10.2.1",
       "typescript": "3.3.3333"
    },
    "dependencies": {
