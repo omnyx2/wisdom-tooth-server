@@ -12,19 +12,22 @@ export interface DoctorObj  {
 
 export interface RequestObj{
     requester: string,
+    requester_phone: string,
+    requester_address: string,
     responder: string,
     status: string,
-    patient_name: string,
-    patient_chartid: string,
     appointment_status: string,
     appointment_date: string,
-    questionaire: string,
+    request_date: number,
+    questionnaire: string,
+    patient_name: string,
+    patient_chartid: string,
     patient_phone: string,
     patient_ssn: string,
-    request_date: number,
+    patient_sex: string,
     requester_note: string,
     responder_note: string,
-    patient_sex: string,
     operator: string,
     img_url: string,
+    isDeleted : boolean
 }

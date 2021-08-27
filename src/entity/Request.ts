@@ -10,10 +10,16 @@ export class Request {
     @Column({length: 45 })
     requester: string;
 
+    @Column({length: 45 }) // 여러 타입의 전화 010 2590 2746 010-2590-2746 010.2590.2746 regex -> 010 2590 2746
+    requester_phone: string;
+
+    @Column({length: 80 }) // 여러 타입의 전화 010 2590 2746 010-2590-2746 010.2590.2746 regex -> 010 2590 2746
+    requester_address: string;
+
     @Column({length: 45 })
     responder: string;
 
-    @Column({length: 45 }) // 신청시 기본으로 갑니다. 접수대기 지역의원과 병원
+    @Column({length: 45 }) // 4개의 상ㄷ태 접수대기, 예약대기, 수술대기, 수술완료
     status: string;
     
     @Column({length: 45 })
@@ -22,14 +28,14 @@ export class Request {
     @Column({length: 45 }) 
     patient_chartid: string;
 
-    @Column({length: 45 }) // 신청시 기본으로 갑니다. 접수대기 (환자신청후 거점 병원과 정하는 것), 5개의 상태 
+    @Column({length: 45 }) // 수술 예정인지 아닌지 
     appointment_status: string;
     
     @Column({length: 45, nullable: true  })  // 대학 병원과 환자 간의 날짜, 대학 병원에서 입력, 캘린더에서 프엔에서 받기
     appointment_date: string;
     
     @Column("text") // json, text로 
-    questionaire: string;
+    questionnaire: string;
     
     @Column({length: 45 }) // 여러 타입의 전화 010 2590 2746 010-2590-2746 010.2590.2746 regex -> 010 2590 2746
     patient_phone: string;
@@ -54,4 +60,7 @@ export class Request {
 
     @Column({ length: 200 }) //이미지는 url로 받아오기
     img_url: string;
+
+    @Column()
+    isDeleted: boolean;
 }

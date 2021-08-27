@@ -2,22 +2,21 @@ import "reflect-metadata";
 import * as express from "express";
 import * as request from 'request';
 import { createConnection } from "typeorm";
-import { Photo } from "./entity/Photo";
 import { Doctor } from "./entity/Doctor";
 import { Request } from "./entity/Request";
-
 var jwt = require('jsonwebtoken');
 var bcrypt = require('bcrypt');
-import {  asyncBcryptPassword, ensureAuthorized, hasValidToken,} from './lib/authLib'
+import {  asyncBcryptPassword, ensureAuthorized, hasValidToken } from './lib/authLib'
 
 import { DoctorObj, RequestObj } from './interfaces'
+import { nextTick } from "process";
 
 
 createConnection({
     type: "postgres",
     host: "localhost",
     port: 5432,
-    username: "lyuhyeonseog",
+    username: "omnyx2",
     password: "",
     database: "testDB",
     entities: [
@@ -92,9 +91,26 @@ createConnection({
             }
         } catch (err){
             console.log(err)
+            throw new Error("err!")
+            next()
         }
     });
-   
+    app.post('/doctor', async function (req, res, next) {
+        try{
+            let doctorRepository = connection.getRepository(Doctor);
+            let doctor = await doctorRepository.findOne({ token: req.body.token });
+            delete doctor.password;
+            delete doctor.token;
+
+            console.log(doctor)
+            res.send(doctor);
+            res.end();
+
+        } catch(err) {
+            res.send("failed")
+            console.log(err.message)
+        }
+    })
     // 판비 서버로 부터 데이터 전송하기 실행
     app.post('/request', async function(req, res, next) {
         console.log(req.body);
@@ -105,20 +121,23 @@ createConnection({
               
         request.requester =          requestObj.requester;
         request.responder =          requestObj.responder;
+        request.requester_phone =    requestObj.requester_phone;
         request.status =             "접수대기";
         request.patient_name =       requestObj.patient_name;
         request.patient_chartid =    requestObj.patient_chartid;
         request.appointment_status = "접수대기";
         request.appointment_date =   requestObj.appointment_date; // nullable
-        request.questionaire =       requestObj.questionaire;
+        request.questionnaire =      requestObj.questionnaire;
         request.patient_phone =      requestObj.patient_phone;
         request.patient_ssn =        requestObj.patient_ssn;
-        request.request_date =       timestamp; //timestamp  
+        request.request_date =       timestamp; //timestamp
+        request.requester_address =  requestObj.requester_address;
         request.requester_note =     requestObj.requester_note; // nullable
         request.responder_note =     requestObj.responder_note; // nullable
         request.patient_sex =        requestObj.patient_sex; 
         request.operator =           requestObj.operator; // 초기값
         request.img_url =            requestObj.img_url;
+        request.isDeleted =          false;
 
         console.log("patient has been saved");
         
@@ -129,25 +148,25 @@ createConnection({
     })
     
     // make it need router
-
     const InfoRouter = express.Router();
 
     // 웹앱에서 환자 데이터 요청하기
     app.get('/request', ensureAuthorized, hasValidToken, async function( req, res) {
 
         let requestRepository = connection.getRepository(Request);
-        let savedRequests = await requestRepository.find();
-        
+        let savedRequests = await requestRepository.find({ isDeleted: false});
+        const statusList = ['접수대기', '예약대기', '수술대기', '수술완료' ];
+        savedRequests.sort((a: RequestObj,b: RequestObj) => (statusList.indexOf(a.status) - statusList.indexOf(b.status)))
+
         // 판비 서버에서 세션을 받아서 이미지링크와 세션 전송
         const panviServerAuthData = { id:"API" , password: "invision!@#"}
-        
         const sessionOfPanvi = await request.post({
             header: {},
             url: 'http://invisionlab.kr/login', // localhost
             body: panviServerAuthData,
             json: true, function(error, res, body) {
                 console.log(res)
-            }
+         }
         }) 
         try {
             res.setHeader
@@ -162,69 +181,178 @@ createConnection({
         }
     })
 
+    //status 상태관련 일괄처리
     app.post('/patient/status',  async function( req, res ) {
 
         let requestRepository = connection.getRepository(Request);
-        console.log(req.body)
+
         let savedRequest = await requestRepository.findOne({ id: req.body.id });
         const statusList = ['접수대기', '예약대기', '수술대기', '수술완료' ];
         
         try {
+            //  접수 대기
             if(savedRequest.status === statusList[0]) {
-                for(let i = 0; i < statusList.length; i++) {
-                    if(savedRequest.status === statusList[i]) {
-                        savedRequest.status = statusList[i+1]
-                        break;
-                    }
-                }
-                await requestRepository.save(savedRequest);
-                let savedRequests = await requestRepository.find();
-                res.send(savedRequests);
-                res.end();
-
+                savedRequest.status = statusList[1]
+                  
+            // 최초의 수술 예약
             } else if(savedRequest.status === statusList[1]) {
-                if( savedRequest.appointment_date === undefined ) { res.send('failed'); } 
-                if( savedRequest.operator === undefined ) { res.send('failed'); } 
-                for(let i = 0; i < statusList.length; i++) {
-                    if(savedRequest.status === statusList[i]) {
-                        savedRequest.status = statusList[i+1]
-                        break;
-                    }
-                }
-                savedRequest.appointment_date = req.body.appointment_date;
-                savedRequest.operator = req.body.operator
-                savedRequest.appointment_status = "수술예약완료";
-                await requestRepository.save(savedRequest);
-                let savedRequests = await requestRepository.find();
-                res.send(savedRequests);
-                res.end();
+                console.log(req.body)
+                if( req.body.appointment_date !== null &&
+                    req.body.operator !== null ) {
+                    console.log("arrived?")
+                    savedRequest.status = statusList[2]  
+                    savedRequest.appointment_date = req.body.appointment_date;
+                    savedRequest.operator = req.body.operator
+                    
+                } else { throw new Error("wrong operator"); } 
 
-            } else if (savedRequest.status === statusList[2])  {
-                for(let i = 0; i < statusList.length; i++) {
-                    if(savedRequest.status === statusList[i]) {
-                        savedRequest.status = statusList[i+1]
-                        break;
-                    }
-                }
-                savedRequest.responder_note = req.body.responder_note === undefined ? "없음" : req.body.responder_note;
-                savedRequest.appointment_status = "수술예약완료";
-                await requestRepository.save(savedRequest);
-                let savedRequests = await requestRepository.find();
-                res.send(savedRequests);
-                res.end();
-    
-            } else {
-                res.send("where are you came from? I'll send you to a virues for ukkkkkkkkkk ;)");
-                res.end();
+            // 수술 대기
+            } else if( savedRequest.status === statusList[2]) {
+                savedRequest.status = statusList[3]  
+                savedRequest.responder_note = req.body.responder_note
             }
-    
-          res.end()
+             else { throw new Error("wrong request status"); }
+
+          await requestRepository.save(savedRequest);
+          res.send(savedRequest);
+          res.end();
 
         } catch(err) {
-            console.log(err)
+            res.send("failed");
+            res.end();
+            console.log(err.message);
         }
-        
     })
+
+    // 수술 날짜 변경하기
+    app.post('/patient/change-operation',  async function( req, res ) {
+
+        let requestRepository = connection.getRepository(Request);
+        let savedRequest = await requestRepository.findOne({ id: req.body.id });
+        const statusList = ['접수대기', '예약대기', '수술대기', '수술완료' ];
+        try{
+            if(savedRequest.status === statusList[2]) {
+                if( req.body.appointment_date !== null &&
+                    req.body.operator !== null ) {
+ 
+                    savedRequest.appointment_date = req.body.appointment_date;
+                    savedRequest.operator = req.body.operator
+                    
+                } else { throw new Error("wrong operator"); } 
+                
+                await requestRepository.save(savedRequest);
+                res.send(savedRequest);
+                res.end();
+
+            } else {
+                    throw new Error("wrong request");
+            }} catch(err) {
+                res.send("failed")
+                console.log(err.message)
+            }
+    })
+    // 후처치 변경하기
+    app.post('/patient/change-responder-note',  async function( req, res ) {
+        let requestRepository = connection.getRepository(Request);
+        let savedRequest = await requestRepository.findOne({ id: req.body.id });
+        const statusList = ['접수대기', '예약대기', '수술대기', '수술완료' ];
+        try{
+            if(savedRequest.status === statusList[3]) {
+                    console.log("done")
+                    savedRequest.responder_note = req.body.responder_note
+                    await requestRepository.save(savedRequest);
+                    res.send(savedRequest);
+                    res.end();
+
+            } else {
+                throw new Error("wrong request");
+            }
+
+        } catch(err) {
+            res.send("failed")
+            console.log(err.message)
+        }
+    })
+
+    // 예약 상태를 뒤로 돌리는 방법 
+    app.post('/patient/down-grade-status',  async function( req, res ) {
+        let requestRepository = connection.getRepository(Request);
+        const statusList = ['접수대기', '예약대기', '수술대기', '수술완료' ];
+        let savedRequest = await requestRepository.findOne({ id: req.body.id });
+
+        try{
+            if(savedRequest.status === statusList[3]) {
+                savedRequest.status = statusList[2];
+                savedRequest.responder_note = null;
+                savedRequest.appointment_status = null;
+
+            } else if(savedRequest.status === statusList[2]) {
+                
+                savedRequest.status = statusList[1];
+                savedRequest.appointment_date = null;
+                savedRequest.operator = null;
+                savedRequest.appointment_status = null;
+                
+            } else if(savedRequest.status === statusList[1]) {
+                savedRequest.status = statusList[0];
+
+            } else {
+                throw new Error("wrong request");
+            }
+
+            await requestRepository.save(savedRequest);
+            res.send(savedRequest);
+            res.end();
+
+        } catch(err) {
+            res.send("failed")
+            console.log(err.message)
+        }
+    })
+
+      // 환자 데이터 초기화
+    app.post('/patient/initialize-status',  async function( req, res ) {
+
+        let requestRepository = connection.getRepository(Request);
+        const statusList = ['접수대기', '예약대기', '수술대기', '수술완료' ];
+        let savedRequest = await requestRepository.findOne({ id: req.body.id });
+        console.log(req.body)
+        try{
+            savedRequest.status = statusList[0];
+            savedRequest.responder_note = null;
+            savedRequest.appointment_date = null;
+            savedRequest.operator = null;
+
+            await requestRepository.save(savedRequest);
+            res.send(savedRequest);
+            res.end();
+
+        } catch(err) {
+            res.send("failed")
+            console.log(err.message)
+        }
+    })
+
+    app.delete('/patient',  async function( req, res, next ) {
+        let requestRepository = connection.getRepository(Request);
+        console.log(req.body)
+        let savedRequest = await requestRepository.findOne({ id: req.body.id });
+        try {
+            if( savedRequest !== undefined ) {
+                savedRequest.isDeleted = true;
+                await requestRepository.save(savedRequest);
+                res.send('del');
+                res.end()
+            } else {
+                throw new Error("Can't Find ID");
+            }
+        } catch(err) {
+            res.send("failed to del")
+            console.log(err);
+            next()
+        }
+    })
+
     app.post('/patient/calendar', ensureAuthorized, hasValidToken, async function( req, res) {
       
     })
@@ -290,9 +418,8 @@ createConnection({
         */
     })
 
-    app.delete('/clear', function(req, res, next) {
-       const where:string = req.body.clearWhere
-       if( where == "doctor") {}
+    app.use((err, req, res, next) => {
+        res.json({ message: err.message} )
     })
 
     app.listen(ServerBasicConfig.port);
