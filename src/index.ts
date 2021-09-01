@@ -231,7 +231,8 @@ createConnection({
         let savedRequest = await requestRepository.findOne({ id: req.body.id });
         const statusList = ['접수대기', '예약대기', '수술대기', '수술완료' ];
         try{
-            if(savedRequest.status === statusList[2]) {
+            if(savedRequest.status !== statusList[3] || 
+                savedRequest.status !== statusList[0] ) {
                 if( req.body.appointment_date !== null &&
                     req.body.operator !== null ) {
  

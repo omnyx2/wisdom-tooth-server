@@ -9,9 +9,9 @@ Created on Thu Jul 22 15:02:45 2021
 
 import requests, json
 import time
-
+BaseURL = 'http://localhost:80/'
 authHeaders = {'Content-Type': 'application/json; charset=utf-8'}
-URL = 'http://panvi.kr:5007/auth'
+URL = BaseURL + 'auth'
 data =  {    
         "phone": "01025902746",
         "password": "hi"
@@ -31,7 +31,7 @@ for i in range(100):
         "Authorization" : "Bearer " + token
     }
     
-    URL = 'http://panvi.kr:5007/request'
+    URL = BaseURL + 'request'
     
     requester = "동현치과" + str(i)
     responder = "연세대학병원"
