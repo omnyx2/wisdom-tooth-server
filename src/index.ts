@@ -46,7 +46,10 @@ createConnection({
     });
 
     console.log(`turning on server on : ${ServerBasicConfig.port}`);
-    
+    app.get('/tester', async (req, res, next) => {
+        res.setHeader("Content-Type", "application/json");
+        res.send("test fine!");   
+    })
     // sign in link
     app.post('/auth', async function(req, res, next) {
         // 요청으로 부터 데이터 얻기
