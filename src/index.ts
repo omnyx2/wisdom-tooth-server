@@ -28,28 +28,30 @@ createConnection({
 }).then(async connection => {
     
     const ServerBasicConfig = {
-        port: 80
+        port: 5007
     }
+    const server = express();
     // create and setup express app
-    const app = express();
-    app.use(express.json());
+    const app = express.Router();
+    
+    server.use(express.json());
     // app.use(bodyParser.urlencoded({ extended: true }));
     // app.use(bodyParser.json());
     // app.use(morgan("dev")); // 모든 요청을 console에 기록
     // app.use(methodOverride()); // DELETE, PUT method 사용
-    app.use(function(req, res, next) {
+    server.use(function(req, res, next) {
         //모든 도메인의 요청을 허용하지 않으면 웹브라우저에서 CORS 에러를 발생시킨다.
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type, Authorization');
         next();
     });
-
     console.log(`turning on server on : ${ServerBasicConfig.port}`);
     app.get('/tester', async (req, res, next) => {
         res.setHeader("Content-Type", "application/json");
         res.send("test fine!");   
     })
+    
     // sign in link
     app.post('/auth', async function(req, res, next) {
         // 요청으로 부터 데이터 얻기
@@ -426,6 +428,7 @@ createConnection({
         res.json({ message: err.message} )
     })
 
-    app.listen(ServerBasicConfig.port);
+    server.use('/wisdom-tooth-apis', app)
+    server.listen(ServerBasicConfig.port);
 
 }).catch(error => console.log(error));
