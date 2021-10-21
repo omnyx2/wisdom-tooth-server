@@ -9,7 +9,7 @@ Created on Thu Jul 22 15:02:45 2021
 
 import requests, json
 import time
-BaseURL = 'http://localhost:80/'
+BaseURL = 'http://invisionlab.xyz:5007/wisdom-tooth-apis/'
 authHeaders = {'Content-Type': 'application/json; charset=utf-8'}
 URL = BaseURL + 'auth'
 data =  {    
@@ -23,7 +23,7 @@ token = res.text
 #print(res.status_code)
 #print(res.text)
 
-for i in range(100):
+for i in range(5):
     
     getRequestHeaders = {
         "Accept": "application/json" ,
