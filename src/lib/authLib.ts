@@ -20,6 +20,18 @@ export async function asyncBcryptPassword(req, res, next ) {
     
 }
 
+export async function asyncBcryptPasswordRaw(password) {
+    try{
+        const hash = await bcrypt.hash(password, saltRounds)
+        return hash
+
+    } catch(err) {
+        console.log(err)
+        return "err"
+    }
+
+}
+
 export function ensureAuthorized(req, res, next) {
 
     // 요청시 토큰은 헤더에 담아서 전달 해야함 

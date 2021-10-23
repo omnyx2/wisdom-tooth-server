@@ -59,7 +59,7 @@ curl \
         "address" : "서울특별시 신촌 에스큐브 S3"
 }'
 curl \
-    -X POST http://panvi.kr:5004/auth/signup \
+    -X POST http://localhost:5007/wisdom-tooth-apis/auth/signup \
     -H "Content-Type: application/json" \
     -d '{
         "name": "현석",

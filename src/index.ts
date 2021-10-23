@@ -6,7 +6,7 @@ import { Doctor } from "./entity/Doctor";
 import { Request } from "./entity/Request";
 var jwt = require('jsonwebtoken');
 var bcrypt = require('bcrypt');
-import {  asyncBcryptPassword, ensureAuthorized, hasValidToken } from './lib/authLib'
+import {  asyncBcryptPassword, ensureAuthorized, hasValidToken, asyncBcryptPasswordRaw } from './lib/authLib'
 
 import { DoctorObj, RequestObj } from './interfaces'
 import { nextTick } from "process";
@@ -39,7 +39,7 @@ createConnection({
     // app.use(bodyParser.json());
     // app.use(morgan("dev")); // 모든 요청을 console에 기록
     // app.use(methodOverride()); // DELETE, PUT method 사용
-    server.use(function(req, res, next) {
+    server.use(asyncBcryptPassword, ensureAuthorized, function(req, res, next) {
         //모든 도메인의 요청을 허용하지 않으면 웹브라우저에서 CORS 에러를 발생시킨다.
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
@@ -100,6 +100,52 @@ createConnection({
             next()
         }
     });
+    app.post('/change-password', ensureAuthorized, hasValidToken, async function(req, res, next) {
+        // 요청으로 부터 데이터 얻기
+        const { phoneNum, rePw, token  } = req.body.params;
+        
+        // 데이터 베이스에서 데이터 가져오기 
+        const doctorRepository = connection.getRepository(Doctor)
+        const savedDoctorUser = await doctorRepository.findOne({token: token})
+        console.log("savedDoctor", savedDoctorUser)
+        console.log(phoneNum)
+        // 요청 데이터의 유효성 검사, 유저 존재 확인
+        try {
+            if (savedDoctorUser.phone !== phoneNum ) {
+                res.setHeader("Content-Type", "application/json");
+                res.send("Who are you? reporting attacker ...");
+            } else { 
+                // 요청 데이터의 유효성 검사, 비밀번호 검증 확인
+                const result = savedDoctorUser.token === token ? true : false;
+                const hashedRePassword = await asyncBcryptPasswordRaw(rePw)
+                console.log(result)
+                // token 생성, 분리할 것
+                if( result ) {
+                    let token = jwt.sign({
+                        exp: Math.floor(Date.now() / 1000) + (60 * 60),
+                        data: `${phoneNum}:${hashedRePassword}`
+                    }, 'secret');
+                    
+                    //token 생성시 데이터 베이스에 저장
+                    savedDoctorUser.token = token;
+                    savedDoctorUser.password = hashedRePassword;
+                    await doctorRepository.save(savedDoctorUser);
+                    
+                    // 토큰 응답 데이터에 담아 전달
+                    res.setHeader("Content-Type", "application/json");
+        
+                    res.send(token);
+                }
+            }
+        } catch (err){
+            console.log(err)
+            throw new Error("err!")
+            next()
+        }
+    });
+
+
+
     app.post('/doctor', async function (req, res, next) {
         try{
             let doctorRepository = connection.getRepository(Doctor);
@@ -359,13 +405,6 @@ createConnection({
         }
     })
 
-    app.post('/patient/calendar', ensureAuthorized, hasValidToken, async function( req, res) {
-      
-    })
-    app.post('/patient/status', ensureAuthorized, hasValidToken, async function( req, res) {
-      
-    })
-
     app.get('/doctors/name', async function(req, res, next) {
 
         let doctorRepository = connection.getRepository(Doctor);
@@ -388,7 +427,7 @@ createConnection({
 
     
     app.post('/auth/signup', asyncBcryptPassword, async function(req, res, next) {
-        asyncBcryptPassword
+        
         const doctorValue: DoctorObj = req.body;
         let doctor = new Doctor();
 
