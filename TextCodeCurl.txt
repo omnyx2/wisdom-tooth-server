@@ -45,12 +45,12 @@ curl \
 
 : auth/signup
 curl \
-    -X POST http://panvi.kr:5007/auth/signup \
+    -X POST http://localhost:5007/signup \
     -H "Content-Type: application/json" \
     -d '{
         "name": "동현",
         "password": "hi",
-        "phone": "01073343551",
+        "phone": "01012345678",
         "belong":   "연세 대학 의료 병원",
         "position": "책임의사",
         "type" :    "??",
