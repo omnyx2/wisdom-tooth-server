@@ -23,14 +23,12 @@ export async function asyncBcryptPassword(req, res, next ) {
 }
 
 export async function asyncBcryptPasswordRaw(password) {
-    console.log(password)
     try{
         const hash = await bcrypt.hash(password, saltRounds)
         return hash
 
     } catch(err) {
-        console.log(err)
-        throw new Error("password BPR error?")
+        // throw new Error("password BPR error?")
         return "err"
     }
 
@@ -48,16 +46,15 @@ export function ensureAuthorized(req, res, next) {
             let bearer = bearerHeader.split(" ");
             bearerToken = bearer[1];
             req.token = bearerToken;
-            console.log("we get header")
 
         } else {
-            // res.sendStatus(403)
-            res.send("You Did't send your jwt")
-            console.error("missing token");
+            res.sendStatus(403)
+            // res.send("You Did't send your jwt")
+            console.error("[EnsureAuthorized Error!]: missing token");
         }
 
     } catch(err) {
-        res.send("Error! You Did't send your jwt")
+        res.send("[EnsureAuthorized Error!]:  You Did't send your jwt")
         res.sendStatus(403);
         console.error(err);
     }
@@ -68,7 +65,6 @@ export function ensureAuthorized(req, res, next) {
 export function hasValidToken(req, res, next) {
 
     const token = req.token;
-    console.log(req)
     if( token !== "error!") {
         try {
             var decoded = jwt.verify(token, 'secret');

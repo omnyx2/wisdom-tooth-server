@@ -8,10 +8,13 @@ var jwt = require('jsonwebtoken');
 var bcrypt = require('bcrypt');
 
 import { doctorController } from './controller/doctor.controller'
+import { doctorsController  } from "./controller/doctors.controller";
+
 import {  asyncBcryptPassword, ensureAuthorized, hasValidToken, asyncBcryptPasswordRaw } from './lib/authLib'
 
 import { DoctorObj, RequestObj } from './interfaces'
 import { nextTick } from "process";
+
 
 
 createConnection({
@@ -53,7 +56,7 @@ createConnection({
     });
     console.log(`turning on server on : ${ServerBasicConfig.port}`);
     app.use(doctorController.router)
-
+    app.use(doctorsController.router)
     app.get('/tester', async (req, res, next) => {
         res.setHeader("Content-Type", "application/json");
         res.send("test fine!");   
@@ -303,23 +306,7 @@ createConnection({
         }
     })
 
-    app.get('/doctors/name', async function(req, res, next) {
-
-        let doctorRepository = connection.getRepository(Doctor);
-        let savedDoctors= await doctorRepository.find();
-        
-        let DoctorsName = []
-        savedDoctors.forEach(element => {
-            DoctorsName.push(element.name)
-        })
-        
-        res.send(DoctorsName)
-        /*
-            curl \
-                -X GET http://localhost:80/doctors \
-                -H "Content-Type: application/json"
-        */
-    })
+   
 
     // sign up link
 

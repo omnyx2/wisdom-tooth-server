@@ -10,11 +10,12 @@ Created on Thu Jul 22 15:02:45 2021
 import requests, json
 import time
 BaseURL = 'http://invisionlab.xyz:5007/wisdom-tooth-apis/'
+# BaseURL = 'http://localhost:5007/wisdom-tooth-apis/'
 authHeaders = {'Content-Type': 'application/json; charset=utf-8'}
 URL = BaseURL + 'auth'
 data =  {    
         "phone": "01025902746",
-        "password": "hi"
+        "password": "91579&ryuL"
         }
 
 res = requests.post(URL, data=json.dumps(data), headers=authHeaders)

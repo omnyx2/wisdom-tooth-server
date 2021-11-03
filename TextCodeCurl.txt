@@ -13,7 +13,7 @@ curl  \
     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2Mjg0OTM2OTQsImRhdGEiOiIwMTA3MzM0MzU1MTokMmIkMDQkTm1YRzd2SXJOdmxVQi5JWmQublRhLjdsd0NqUkxTeTJYSHFuVVpFUER2NFR3VmxRdS9ZQ20iLCJpYXQiOjE2Mjg0OTAwOTR9.YorC8-E4-ky57TJ59YMtB-wQ-GCwJ8ieEOXb7KpX8p4
 
  curl \
-    -X POST http://localhost:80/request \
+    -X POST http://localhost:5007/request \
     -H "Content-Type: application/json" \
     -H ""
     -d  '{
