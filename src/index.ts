@@ -104,7 +104,7 @@ createConnection({
     app.get('/request', ensureAuthorized, hasValidToken, async function( req, res) {
 
         let requestRepository = connection.getRepository(Request);
-        let savedRequests = await requestRepository.find({ isDeleted: false});
+        let savedRequests = await requestRepository.find({ isDeleted: false });
         const statusList = ['접수대기', '예약대기', '수술대기', '수술완료' ];
         savedRequests.sort((a: RequestObj,b: RequestObj) => (statusList.indexOf(a.status) - statusList.indexOf(b.status)))
 

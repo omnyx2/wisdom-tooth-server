@@ -29,27 +29,29 @@ class DoctorsController {
 
     doctorsName =  async function(req, res, next) {
         let doctorRepository = getRepository(Doctor);
-        let savedDoctor = await doctorRepository.findOne({ token: req.body.token });
+        let savedDoctor = await doctorRepository.findOne({ token: req.token });
+        console.log(req.body)
         try{
             if(savedDoctor != undefined ) {
                 let doctorRepository = getRepository(Doctor);
-                let savedDoctors= await doctorRepository.find(); 
+                let savedDoctors= await doctorRepository.find();
+        
+                let DoctorsName = []
+                savedDoctors.forEach(element => {
+                    DoctorsName.push(element.name)
+                })
+                
+                res.send(DoctorsName)
+            
             } else {
-
+                console.log("[doctorsName Error]: someone is attacking server!!!")
+                res.sendStatus(403)
             }
                 
         } catch(err) {
             console.error(err)
+            res.sendStatus(403)
         }
-        
-        let savedDoctors= await doctorRepository.find();
-        
-        let DoctorsName = []
-        savedDoctors.forEach(element => {
-            DoctorsName.push(element.name)
-        })
-        
-        res.send(DoctorsName)
     }
 }
 

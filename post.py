@@ -9,8 +9,9 @@ Created on Thu Jul 22 15:02:45 2021
 
 import requests, json
 import time
-BaseURL = 'http://invisionlab.xyz:5007/wisdom-tooth-apis/'
-# BaseURL = 'http://localhost:5007/wisdom-tooth-apis/'
+
+# BaseURL = 'http://invisionlab.xyz:5007/wisdom-tooth-apis/'
+BaseURL = 'http://localhost:5007/wisdom-tooth-apis/'
 authHeaders = {'Content-Type': 'application/json; charset=utf-8'}
 URL = BaseURL + 'auth'
 data =  {    
