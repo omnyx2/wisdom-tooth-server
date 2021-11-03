@@ -6,10 +6,8 @@ import { Doctor } from "./entity/Doctor";
 import { Request } from "./entity/Request";
 var jwt = require('jsonwebtoken');
 var bcrypt = require('bcrypt');
-
-import { doctorController } from './controller/doctor.controller'
-import { doctorsController  } from "./controller/doctors.controller";
-
+import { doctorController } from './controller/doctor.controller';
+import { doctorsController  } from "./controller/doctors.controller"; 
 import {  asyncBcryptPassword, ensureAuthorized, hasValidToken, asyncBcryptPasswordRaw } from './lib/authLib'
 
 import { DoctorObj, RequestObj } from './interfaces'
