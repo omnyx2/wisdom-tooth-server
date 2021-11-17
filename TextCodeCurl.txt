@@ -59,16 +59,16 @@ curl \
         "address" : "서울특별시 신촌 에스큐브 S3"
 }'
 curl \
-    -X POST http://invisionlab.xyz:5007/wisdom-tooth-apis/auth/signup \
+    -X POST http://invisionlab.xyz:5007/wisdom-tooth-apis/signup \
     -H "Content-Type: application/json" \
     -d '{
-        "name": "현석",
+        "name": "동현",
         "password": "hi",
-        "phone": "01025902746",
-        "belong":   "연세 대학 의료 병원",
-        "position": "책임의사",
-        "type" :    "??",
-        "email" :   "omnyx2@gmail.com", 
+        "phone": "01073343551",
+        "belong":   "인비전랩",
+        "position": "CEO",
+        "type" :    "관리자",
+        "email" :   "psds075@gmail.com", 
         "profile_image" :  "www.naver.com/png",
         "address" : "서울특별시 신촌 에스큐브 S3"
 }'
