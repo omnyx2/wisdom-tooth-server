@@ -1,3 +1,4 @@
+require('dotenv').config()
 import "reflect-metadata";
 import * as express from "express";
 import * as request from 'request';
@@ -22,9 +23,9 @@ createConnection({
     type: "postgres",
     host: "localhost",
     port: 5432,
-    username: "postgres",
+    username: process.env.USERNAME,
     password: "",
-    database: "testDB",
+    database: process.env.DBNAME,
     entities: [
         // Photo,
 	    Doctor,
@@ -34,7 +35,7 @@ createConnection({
 }).then(async connection => {
     
     const ServerBasicConfig = {
-        port0: 5007,
+        port0: process.env.SERVER_PORT,
         port1: 5009
     }
     const server = express();
