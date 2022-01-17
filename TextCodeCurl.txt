@@ -59,7 +59,7 @@ curl \
         "address" : "서울특별시 신촌 에스큐브 S3"
 }'
 curl \
-    -X POST http://invisionlab.xyz:5007/wisdom-tooth-apis/signup \
+    -X POST http://localhost:5007/wisdom-tooth-apis/signup \
     -H "Content-Type: application/json" \
     -d '{
         "name": "동현",
@@ -70,9 +70,17 @@ curl \
         "type" :    "관리자",
         "email" :   "psds075@gmail.com", 
         "profile_image" :  "www.naver.com/png",
-        "address" : "서울특별시 신촌 에스큐브 S3"
+        "address" : "서울특별시 신촌 에스큐브 S3",
+        "hospital_name": "신촌연대세브란스병원"
 }'
 
+curl \
+    -X POST http://localhost:5007/hospital/regist \
+    -H "Content-Type: application/json" \
+    -d '{
+        "hospital_name": "신촌연대세브란스병원"
+        "MASTER_CODE": "test",
+}'
 
 /*
     curl \
