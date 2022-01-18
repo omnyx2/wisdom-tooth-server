@@ -2,7 +2,8 @@ import { Router } from "express";
 import { getRepository } from "typeorm";
 import * as request from "request";
 import { Request } from "../entity/Request";
-import { RequestObj } from "../interfaces";
+import { Hospital } from "../entity/Hospital";
+import { RequestObj, HospitalObj, ResponseSnippet } from "../interfaces";
 import {
   ensureAuthorized,
   hasValidToken,
@@ -37,8 +38,8 @@ class RequestController {
   async saveRequest(req, res, next) {
     const requestObj: RequestObj = req.body;
     const timestamp = new Date().getTime();
-    let request: RequestObj;
-
+    let request = new Request();
+    console.log(requestObj)
     request.requester = requestObj.requester;
     request.responder = requestObj.responder;
     request.requester_phone = requestObj.requester_phone;
@@ -58,12 +59,39 @@ class RequestController {
     request.operator = requestObj.operator; // 초기값
     request.img_url = requestObj.img_url;
     request.isDeleted = false;
-    request.hospital = requestObj.hospital;
+    
 
-    let requestRepository = getRepository(Request);
-    await requestRepository.save(request);
+    let hospitalRepository = getRepository(Hospital);
+    let isExistHospital = await hospitalRepository.findOne({ hospital_name:  requestObj.hospital_name })
+    console.log("hi")
+    if( isExistHospital !== undefined ) {
 
-    res.send("done");
+      let requestRepository = getRepository(Request);
+      request.hospital = isExistHospital
+      await requestRepository.save(request);
+
+      const message = 'Request was successfully saved';
+      const snippet: ResponseSnippet = {
+        status: 200,
+        code: 0,
+        message
+      }
+      console.log(message)
+      res.send(snippet);
+      
+    } else {
+      const message = 'Request was falied to save';
+      const snippet: ResponseSnippet = {
+        status: 403,
+        code: -1,
+        message
+      }
+      console.log(message)
+      res.send(snippet);
+
+    }
+    
+    res.end();
   }
 
   // 웹앱에서 환자 데이터 요청하기
@@ -72,7 +100,7 @@ class RequestController {
     let savedRequests = await requestRepository.find({ isDeleted: false });
     const statusList = ["접수대기", "예약대기", "수술대기", "수술완료"];
     savedRequests.sort(
-      (a: RequestObj, b: RequestObj) =>
+      (a, b) =>
         statusList.indexOf(a.status) - statusList.indexOf(b.status)
     );
 

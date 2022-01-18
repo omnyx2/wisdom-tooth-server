@@ -25,7 +25,10 @@ export class Doctor {
   password: string;
 
   @Column({ length: 300, nullable: true })
-  token: string;
+  access_token: string;
+  
+  @Column({ length: 300, nullable: true })
+  refresh_token: string;
 
   @Column({ length: 45 })
   belong: string;
@@ -42,6 +45,8 @@ export class Doctor {
   @Column({ length: 45 })
   address: string;
 
-  @ManyToOne(() => Hospital, (hospital) => hospital.doctors)
-  hospital: Hospital;
+  @ManyToOne(() => Hospital, (hospital) => hospital.doctors,  {
+    onDelete: 'CASCADE',
+  })
+  public hospital: Hospital;
 }

@@ -9,7 +9,7 @@ export interface DoctorObj {
   password: string;
   address: string;
   doctorValue: any;
-  hospital: any;
+  hospital_name: any;
 }
 
 export interface RequestObj {
@@ -33,6 +33,7 @@ export interface RequestObj {
   img_url: string;
   isDeleted: boolean;
   hospital: any;
+  hospital_name;
 }
 
 export interface HospitalObj {
@@ -41,4 +42,10 @@ export interface HospitalObj {
   hospital_name: string;
   doctors: Array<any>;
   requests: Array<any>;
+}
+
+export interface ResponseSnippet {
+  status: number;
+  code: number;
+  message: string;
 }

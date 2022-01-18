@@ -15,7 +15,7 @@ import { doctorController } from "./controller/doctor.controller";
 import { doctorsController } from "./controller/doctors.controller";
 import { requestController } from "./controller/request.controller";
 import { patientController } from "./controller/patient.controller";
-import { HospitalController } from "./controller/Hospital.controller";
+import { hospitalController } from "./controller/hospital.controller";
 import {
   asyncBcryptPassword,
   ensureAuthorized,
@@ -36,6 +36,7 @@ createConnection({
     // Photo,
     Doctor,
     Request,
+    Hospital,
   ],
   synchronize: true,
 })
@@ -76,6 +77,7 @@ createConnection({
     app.use(doctorsController.router);
     app.use(requestController.router);
     app.use(patientController.router);
+    app.use(hospitalController.router)
     app.get("/tester", async (req, res, next) => {
       res.setHeader("Content-Type", "application/json");
       res.send("test fine!");

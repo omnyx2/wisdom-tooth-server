@@ -13,9 +13,6 @@ export class Hospital {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @PrimaryColumn()
-  hospital_code: number;
-
   @Column({ length: 100 })
   hospital_name: string;
 
@@ -23,5 +20,5 @@ export class Hospital {
   doctors: Doctor[];
 
   @OneToMany(() => Request, (request) => request.hospital)
-  requests: request[];
+  requests: Request[];
 }

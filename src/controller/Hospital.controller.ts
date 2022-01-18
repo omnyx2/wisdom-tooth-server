@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { getRepository } from "typeorm";
 import { Hospital } from "../entity/Hospital";
-import { HospitalObj } from "../interfaces";
+import { HospitalObj, ResponseSnippet } from "../interfaces";
 import {
   ensureAuthorized,
   hasValidToken,
@@ -11,7 +11,7 @@ import {
 var jwt = require("jsonwebtoken");
 var bcrypt = require("bcrypt");
 
-class hospitalController {
+class HospitalController {
   baseUrl = "/hospital";
   router = Router();
 
@@ -25,6 +25,9 @@ class hospitalController {
   initializeRoutes() {
     const router = Router();
     // wrapper 패턴을 추가하고자 했으나 해당 단계에서 필요하지 않음
+    router.get("/", (req, res, next) => {
+      res.send("ho")
+    })
     router.post("/regist", this.hasPermission, this.registHospital);
     this.router.use(this.baseUrl, router);
   }
@@ -44,23 +47,35 @@ class hospitalController {
     const hospitalValue: HospitalObj = req.body;
     let hospital = new Hospital();
 
-    console.log(req.body);
     hospital.hospital_name = req.body.hospital_name;
     let hospitalRepository = getRepository(Hospital);
 
-    let isExist = await hospitalRepository.findOne({
+    let isExistHospital = await hospitalRepository.findOne({
       hospital_name: req.body.hospital_name,
     });
+   
 
-    if (isExist === undefined) {
-      console.log("Doctor has been saved");
+    if (isExistHospital === undefined) {
       await hospitalRepository.save(hospital);
+      const message = 'Successed to assert hospital';
+      const snippet: ResponseSnippet = {
+        status: 200,
+        code: -1,
+        message
+      }
+      console.log(message);
+      res.send(snippet);
 
-      console.log(req.body);
-      res.send("Hospital registed");
     } else {
-      console.log("Existing Hospital");
-      res.send("404");
+      const message = 'Registed hospital';
+      const snippet: ResponseSnippet = {
+        status: 403,
+        code: -1,
+        message
+      }
+      console.warn(message);
+      res.send(snippet);
+  
     }
 
     /* curl로 가입
@@ -69,4 +84,4 @@ class hospitalController {
   };
 }
 
-export const HospitalController = new hospitalController();
+export const hospitalController = new HospitalController();

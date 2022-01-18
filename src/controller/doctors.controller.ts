@@ -29,7 +29,7 @@ class DoctorsController {
 
     doctorsName =  async function(req, res, next) {
         let doctorRepository = getRepository(Doctor);
-        let savedDoctor = await doctorRepository.findOne({ token: req.token });
+        let savedDoctor = await doctorRepository.findOne({ access_token: req.access_token });
         console.log(req.body)
         try{
             if(savedDoctor != undefined ) {

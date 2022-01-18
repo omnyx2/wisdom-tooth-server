@@ -1,6 +1,6 @@
 import { Console } from "console";
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
-
+import { Hospital } from './Hospital'
 @Entity()
 export class Request {
   @PrimaryGeneratedColumn()
@@ -63,6 +63,8 @@ export class Request {
   @Column()
   isDeleted: boolean;
 
-  @ManyToOne(() => Hospital, (hospital) => hospital.requests)
-  hospital: Hospital;
+  @ManyToOne(() => Hospital, (hospital) => hospital.requests,  {
+    onDelete: 'CASCADE',
+  })
+  public hospital: Hospital;
 }
